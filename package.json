@@ -6,6 +6,13 @@
   "scripts": {
     "test": "npm test"
   },
+  "engines": {
+      "node": ">=0.10.0"
+  },
+  "repository": {
+      "type": "git",
+      "url": "git://github.com/tonyskn/node-redis-timeseries.git"
+  },
   "keywords": [
     "Redis",
     "Timeseries"
