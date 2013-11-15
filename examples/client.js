@@ -3,9 +3,9 @@ var TimeSeries = require('../'),
     client = redis.createClient(),
     ts = new TimeSeries(client);
 
-client.on("error", function(err) { consoe.log("Error: ", err); });
+client.on("error", function(err) { console.log("Error: ", err); });
 
 // Gets the hit counters for the last 5 '5minutes' time slots
-ts.getHits("messages", "5minutes", 5, console.log);
+ts.getHits("messages", "5minutes", 15, console.log);
 
 client.quit();

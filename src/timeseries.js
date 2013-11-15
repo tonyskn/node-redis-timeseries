@@ -93,9 +93,7 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
     }
 
     for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.factor, i+=1) {
-      if (results[i]) {
-        data.push([ts, parseInt(results[i], 10)]);
-      }
+      data.push([ts, results[i] ? parseInt(results[i], 10) : 0]);
     }
 
     return callback(null, data.slice(Math.max(data.length - count, 0)));
