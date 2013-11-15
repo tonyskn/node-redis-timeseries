@@ -5,7 +5,7 @@ var TimeSeries = require('../'),
 
 client.on("error", function(err) { consoe.log("Error: ", err); });
 
-ts.getHits("visits", "5minutes", 4, function(err, data) {
+ts.getHits("messages", "5minutes", 4, function(err, data) {
   console.log(err, data);
 });
 

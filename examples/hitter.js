@@ -6,10 +6,14 @@ var redis = require('redis'),
 
 client.on("error", function(err) { console.log("Error: ", err); });
 
-setInterval(function() {
+var randomDelay = function() {
+  return Math.floor( Math.random() * 10 * 1000 );
+};
+
+setTimeout(function hit() {
   ts.recordHit("messages")
-    .recordHit("visits")
     .exec(function() {
-      console.log("Recorded hit", new Date(), ++i);
+      console.log("Recorded hit", ++i, new Date());
+      setTimeout(hit, randomDelay());
     });
-}, 90 * 1000);
+}, randomDelay());
