@@ -5,8 +5,7 @@ var TimeSeries = require('../'),
 
 client.on("error", function(err) { consoe.log("Error: ", err); });
 
-ts.getHits("messages", "5minutes", 4, function(err, data) {
-  console.log(err, data);
-});
+// Gets the hit counters for the last 5 '5minutes' time slots
+ts.getHits("messages", "5minutes", 5, console.log);
 
 client.quit();

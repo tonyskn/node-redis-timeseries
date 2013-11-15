@@ -10,6 +10,8 @@ var randomDelay = function() {
   return Math.floor( Math.random() * 10 * 1000 );
 };
 
+// Just hit the 'messages' counter and wait between
+// 0, 10 secs before trying again
 setTimeout(function hit() {
   ts.recordHit("messages")
     .exec(function() {

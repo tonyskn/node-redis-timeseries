@@ -1,8 +1,29 @@
 
 var TimeSeries = module.exports = function(redis) {
   this.redis = redis;
-  this.granularities = Object.keys(granularitiesConfig);
   this.pendingMulti = redis.multi();
+  this.granularities = {
+    '5minutes': {
+      size: 288,
+      ttl: 172800, // Available for 24 hours
+      factor: 300
+    },
+    '10minutes': {
+      size: 144,
+      ttl: 172800, // Available for 24 hours
+      factor: 600
+    },
+    'hour': {
+      size:   168,
+      ttl:    1209600, // Available for 7 days
+      factor: 3600
+    },
+    'day': {
+      size:   365,
+      ttl:    63113880, // Available for 24 months
+      factor: 86400
+    }
+  };
 };
 
 /**
@@ -17,14 +38,14 @@ var TimeSeries = module.exports = function(redis) {
 TimeSeries.prototype.recordHit = function(key) {
   var self = this;
 
-  this.granularities.forEach(function(gran) {
-    var properties = granularitiesConfig[gran],
-        tsround = getRoundedTime(properties.size * properties.factor),
-        tmpKey = [key, gran, tsround].join(':'),
-        ts = getRoundedTime(properties.factor);
+  Object.keys(this.granularities).forEach(function(gran) {
+    var properties = self.granularities[gran],
+        keyTimestamp = getRoundedTime(properties.size * properties.factor),
+        tmpKey = [key, gran, keyTimestamp].join(':'),
+        hitTimestamp = getRoundedTime(properties.factor);
 
-   self.pendingMulti.hincrby(tmpKey, ts, 1);
-   self.pendingMulti.expireat(tmpKey, tsround + properties.ttl);
+   self.pendingMulti.hincrby(tmpKey, hitTimestamp, 1);
+   self.pendingMulti.expireat(tmpKey, keyTimestamp + properties.ttl);
   });
 
   return this;
@@ -49,7 +70,7 @@ TimeSeries.prototype.exec = function(callback) {
  *   --> "messages" hits during the last 3 '10minutes' chunks
  */
 TimeSeries.prototype.getHits = function(key, gran, count, callback) {
-  var properties = granularitiesConfig[gran],
+  var properties = this.granularities[gran],
       currentTime = getCurrentTime();
 
   if (typeof properties === "undefined") {
@@ -60,8 +81,8 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
       to = getRoundedTime(properties.factor, currentTime);
 
   for(var ts=from, multi=this.redis.multi(); ts<=to; ts+=properties.factor) {
-    var tsround = getRoundedTime(properties.size * properties.factor, ts),
-        tmpKey = [key, gran, tsround].join(':');
+    var keyTimestamp = getRoundedTime(properties.size * properties.factor, ts),
+        tmpKey = [key, gran, keyTimestamp].join(':');
 
     multi.hget(tmpKey, ts);
   }
@@ -81,33 +102,12 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
   });
 };
 
-var granularitiesConfig = {
-  '5minutes': { // Available for 24 hours
-    size: 288,
-    ttl: 172800,
-    factor: 300
-  },
-  '10minutes': { // Available for 24 hours
-    size: 144,
-    ttl: 172800,
-    factor: 600
-  },
-  'hour': { // Available for 7 days
-    size:   168,
-    ttl:    1209600,
-    factor: 3600
-  },
-  'day': { // Available for 24 months
-    size:   365,
-    ttl:    63113880,
-    factor: 86400
-  }
-};
-
+// Get current timestamp in seconds
 var getCurrentTime = function() {
   return Math.floor(Date.now() / 1000);
 };
 
+// Round timestamp to the 'precision' interval (in seconds)
 var getRoundedTime = function(precision, time) {
   time = time || getCurrentTime();
   return Math.floor(time / precision) * precision;
