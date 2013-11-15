@@ -8,12 +8,14 @@
   },
   "keywords": [
     "Redis",
-    "Timeseries",
-    "Async"
+    "Timeseries"
   ],
   "author": "Tony Sokhon",
   "license": "MIT",
-  "dependencies": {
+  "peerDependencies": {
+    "redis": "~0.9.0"
+  },
+  "devDependencies": {
     "redis": "~0.9.0",
     "hiredis": "~0.1.15"
   }
