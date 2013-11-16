@@ -4,38 +4,21 @@ var TimeSeries = module.exports = function(redis, keyBase, granularities) {
   this.keyBase = keyBase || 'stats';
   this.pendingMulti = redis.multi();
   this.granularities = granularities || {
-    '1second': {
-      size: 300,
-      ttl: 600,
-      factor: 1
-    },
-    '1minute': {
-      size: 60,
-      ttl: 7200,
-      factor: 60
-    },
-    '5minutes': {
-      size: 288,
-      ttl: 172800, // Available for 24 hours
-      factor: 300
-    },
-    '10minutes': {
-      size: 144,
-      ttl: 172800, // Available for 24 hours
-      factor: 600
-    },
-    'hour': {
-      size:   168,
-      ttl:    1209600, // Available for 7 days
-      factor: 3600
-    },
-    'day': {
-      size:   365,
-      ttl:    63113880, // Available for 24 months
-      factor: 86400
-    }
+    '1second'  : { ttl: this.minutes(5), duration: 1 },
+    '1minute'  : { ttl: this.hours(1)  , duration: this.minutes(1) },
+    '5minutes' : { ttl: this.days(1)   , duration: this.minutes(5) },
+    '10minutes': { ttl: this.days(1)   , duration: this.minutes(10) },
+    '1hour'    : { ttl: this.days(7)   , duration: this.hours(1) },
+    '1day'     : { ttl: this.weeks(52) , duration: this.days(1) }
   };
 };
+
+/** Helper functions that compute various durations in secs */
+TimeSeries.prototype.seconds = function(i) { return i; };
+TimeSeries.prototype.minutes = function(i) { return i*60; };
+TimeSeries.prototype.hours   = function(i) { return i*this.minutes(60); };
+TimeSeries.prototype.days    = function(i) { return i*this.hours(24); };
+TimeSeries.prototype.weeks   = function(i) { return i*this.days(7); };
 
 /**
  * Record a hit for the specified stats entry
@@ -51,12 +34,12 @@ TimeSeries.prototype.recordHit = function(key, timestamp) {
 
   Object.keys(this.granularities).forEach(function(gran) {
     var properties = self.granularities[gran],
-        keyTimestamp = getRoundedTime(properties.size * properties.factor, timestamp),
+        keyTimestamp = getRoundedTime(properties.ttl, timestamp),
         tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
-        hitTimestamp = getRoundedTime(properties.factor, timestamp);
+        hitTimestamp = getRoundedTime(properties.duration, timestamp);
 
    self.pendingMulti.hincrby(tmpKey, hitTimestamp, 1);
-   self.pendingMulti.expireat(tmpKey, keyTimestamp + properties.ttl);
+   self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
   });
 
   return this;
@@ -88,11 +71,15 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
     return callback(new Error("Unsupported granularity: "+gran));
   }
 
-  var from = getRoundedTime(properties.factor, currentTime - count*properties.factor),
-      to = getRoundedTime(properties.factor, currentTime);
+  if (count > properties.ttl / properties.duration) {
+    return callback(new Error("Count: "+count+" exceeds the maximum stored slots for granularity: "+gran));
+  }
 
-  for(var ts=from, multi=this.redis.multi(); ts<=to; ts+=properties.factor) {
-    var keyTimestamp = getRoundedTime(properties.size * properties.factor, ts),
+  var from = getRoundedTime(properties.duration, currentTime - count*properties.duration),
+      to = getRoundedTime(properties.duration, currentTime);
+
+  for(var ts=from, multi=this.redis.multi(); ts<=to; ts+=properties.duration) {
+    var keyTimestamp = getRoundedTime(properties.ttl, ts),
         tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
 
     multi.hget(tmpKey, ts);
@@ -103,7 +90,7 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
       return callback(err);
     }
 
-    for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.factor, i+=1) {
+    for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.duration, i+=1) {
       data.push([ts, results[i] ? parseInt(results[i], 10) : 0]);
     }
 
