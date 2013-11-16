@@ -21,13 +21,16 @@ TimeSeries.prototype.days    = function(i) { return i*this.hours(24); };
 TimeSeries.prototype.weeks   = function(i) { return i*this.days(7); };
 
 /**
- * Record a hit for the specified stats entry
+ * Record a hit for the specified stats key
  * This method is chainable:
  * --> var ts = new TimeSeries(redis)
  *              .recordHit("messages")
- *              .recordHit("purchases")
+ *              .recordHit("purchases", ts)
  *              ...
  *              .exec([callback]);
+ *
+ * `timestamp` should be in seconds, and defaults to
+ * current time.
  */
 TimeSeries.prototype.recordHit = function(key, timestamp) {
   var self = this;
@@ -54,13 +57,13 @@ TimeSeries.prototype.exec = function(callback) {
   if (this.pendingMulti) {
     this.pendingMulti.exec(function(err, result) {
       self.pendingMulti = self.redis.multi();
-      callback(err, result);
+      if (typeof callback === "function") callback(err, result);
     });
   }
 };
 
 /** 
- * getHits(redis, "messages", "10minutes", 3, cb)
+ * getHits("messages", "10minutes", 3, cb)
  *   --> "messages" hits during the last 3 '10minutes' chunks
  */
 TimeSeries.prototype.getHits = function(key, gran, count, callback) {

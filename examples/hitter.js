@@ -10,8 +10,8 @@ var randomDelay = function() {
   return Math.floor( Math.random() * 15 * 100 );
 };
 
-// Just hit the 'messages' counter and wait between
-// 0, 10 secs before trying again
+// Just increment the 'key' counter and wait
+// some delay before trying again
 setTimeout(function hit() {
   ts.recordHit(key)
     .exec(function() {

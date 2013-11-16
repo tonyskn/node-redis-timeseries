@@ -4,7 +4,8 @@ var redis = require('redis').createClient(),
 
 redis.on("error", function(err) { console.log("Error: ", err); });
 
-// Gets the hit counters for the last 5 '5minutes' time slots
+// ex: node examples/client.js messages 1day 10
+// --> Get the hit count per day for the lat 10 days
 console.log(Math.floor(Date.now()/1000));
 ts.getHits(process.argv[2], process.argv[3], process.argv[4], function(err, data) {
   if (err) {

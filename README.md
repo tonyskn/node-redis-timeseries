@@ -66,7 +66,7 @@ The default granularities are:
 }
 ```
 
-This means that the number of `hits per second` will be stored for the `last 5 minutes`, and the corresponding hashset will expire afterwards.  Likewise, the number of `hits per minute` for a given key will be maintained for the `last hour`.  `Daily` counters on the other hand are kept for a full year.
+This means that the number of `hits per second` will be stored for `5 minutes`, and the corresponding hashset will expire afterwards.  Likewise, the number of `hits per minute` for a given key will be kept for an `hour`.  `Daily` counters on the other hand are kept for a full year.
 
 When querying for statistics, a granularity label is expected:
 
@@ -74,10 +74,10 @@ When querying for statistics, a granularity label is expected:
 	// Give me the hits/second for the last 3 minutes
 	ts.getHits('your_stats_key', '1second', ts.minutes(3), callback);
 	
-	// Give me the daily counters for the last 2 weeks
+	// Give me the number of hits per day for the last 2 weeks
 	ts.getHits('your_stats_key', '1day', 14, callback);
 	
 	// And so on
 ```
 
-When creating the `TimeSeries`client, you can override the default granularities with your own. 
+When creating the `TimeSeries` client, you can override the default granularities with your own. 
