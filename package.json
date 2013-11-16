@@ -1,6 +1,6 @@
 {
   "name": "redis-timeseries",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Manage timeseries data storage in Redis with ease",
   "main": "index.js",
   "scripts": {

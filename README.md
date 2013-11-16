@@ -2,6 +2,82 @@
 
 Convenient module for storing and querying time series statistics in Redis using Node.js.
 
-The idea (and even parts of the implementation) were shamelessly stolen from the [ApiAxle](http://blog.apiaxle.com/post/storing-near-realtime-stats-in-redis/) project.
+The design (and even parts of the implementation) were picked from the [ApiAxle](http://blog.apiaxle.com/post/storing-near-realtime-stats-in-redis/) project.
 
 Check the contents of the `examples` folder for working examples.
+
+## Dependencies
+
+`redis-timeseries` has no dependencies, and will work along the `redis` module you'll install in your own project. `redis@~0.9.0` versions are compatible.
+
+## Usage
+
+```javascript
+	var TimeSeries = require('redis-timeseries'),
+		redis = require('redis').createClient();
+		
+	// Create the TimeSeries client
+	//
+	// "stats" is the Redis namespace which will be used
+	// for storing all the TimeSeries related keys
+    //
+	// "granularities" encodes the granularities at which
+	// you want to store statistics. More on that in the next section
+	//
+	var ts = new TimeSeries(redis, "stats", granularities);
+	
+	// Recording hits
+	//
+	// This increments the counters for the
+	// stats keys you provide
+	//
+	// "timestamp" defaults to the current time
+	//
+	ts.recordHit('your_stats_key')
+	  .recordHit('another_stats_key', timestamp)
+	  …
+	  .exec();
+	  
+	// Querying statistics
+	//
+	// Returns "count" chunks of counters at the precision described by
+	// "granularity_label"
+	// 
+	ts.getHits('your_stats_key', granularity_label, count, function(err, data) {
+		// data.length == count
+		// data = [ [ts1, count1], [ts2, count2]... ]
+	});
+```
+
+## Defining custom statistics granularities
+
+For each key, `TimeSeries` stores statistics at different granularities. For further information about this, please refer to the detailed [blog post](http://blog.apiaxle.com/post/storing-near-realtime-stats-in-redis/) from the ApiAxle project.
+
+The default granularities are:
+
+```javascript
+{
+    '1second'  : { ttl: this.minutes(5), duration: 1 },
+    '1minute'  : { ttl: this.hours(1)  , duration: this.minutes(1) },
+    '5minutes' : { ttl: this.days(1)   , duration: this.minutes(5) },
+    '10minutes': { ttl: this.days(1)   , duration: this.minutes(10) },
+    '1hour'    : { ttl: this.days(7)   , duration: this.hours(1) },
+    '1day'     : { ttl: this.weeks(52) , duration: this.days(1) }
+}
+```
+
+This means that the number of `hits per second` will be stored for the `last 5 minutes`, and the corresponding hashset will expire afterwards.  Likewise, the number of `hits per minute` for a given key will be maintained for the `last hour`.  `Daily` counters on the other hand are kept for a full year.
+
+When querying for statistics, a granularity label is expected:
+
+```javascript
+	// Give me the hits/second for the last 3 minutes
+	ts.getHits('your_stats_key', '1second', ts.minutes(3), callback);
+	
+	// Give me the daily counters for the last 2 weeks
+	ts.getHits('your_stats_key', '1day', 14, callback);
+	
+	// And so on
+```
+
+When creating the `TimeSeries`client, you can override the default granularities with your own. 
