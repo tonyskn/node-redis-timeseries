@@ -1,8 +1,19 @@
 
-var TimeSeries = module.exports = function(redis) {
+var TimeSeries = module.exports = function(redis, keyBase, granularities) {
   this.redis = redis;
+  this.keyBase = keyBase || 'stats';
   this.pendingMulti = redis.multi();
-  this.granularities = {
+  this.granularities = granularities || {
+    '1second': {
+      size: 300,
+      ttl: 600,
+      factor: 1
+    },
+    '1minute': {
+      size: 60,
+      ttl: 7200,
+      factor: 60
+    },
     '5minutes': {
       size: 288,
       ttl: 172800, // Available for 24 hours
@@ -35,14 +46,14 @@ var TimeSeries = module.exports = function(redis) {
  *              ...
  *              .exec([callback]);
  */
-TimeSeries.prototype.recordHit = function(key) {
+TimeSeries.prototype.recordHit = function(key, timestamp) {
   var self = this;
 
   Object.keys(this.granularities).forEach(function(gran) {
     var properties = self.granularities[gran],
-        keyTimestamp = getRoundedTime(properties.size * properties.factor),
-        tmpKey = [key, gran, keyTimestamp].join(':'),
-        hitTimestamp = getRoundedTime(properties.factor);
+        keyTimestamp = getRoundedTime(properties.size * properties.factor, timestamp),
+        tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
+        hitTimestamp = getRoundedTime(properties.factor, timestamp);
 
    self.pendingMulti.hincrby(tmpKey, hitTimestamp, 1);
    self.pendingMulti.expireat(tmpKey, keyTimestamp + properties.ttl);
@@ -82,7 +93,7 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
 
   for(var ts=from, multi=this.redis.multi(); ts<=to; ts+=properties.factor) {
     var keyTimestamp = getRoundedTime(properties.size * properties.factor, ts),
-        tmpKey = [key, gran, keyTimestamp].join(':');
+        tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
 
     multi.hget(tmpKey, ts);
   }
