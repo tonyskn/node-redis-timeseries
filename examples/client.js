@@ -1,11 +1,16 @@
-var TimeSeries = require('../'),
-    redis = require('redis'),
-    client = redis.createClient(),
-    ts = new TimeSeries(client);
+var redis = require('redis').createClient(),
+    TimeSeries = require('../'),
+    ts = new TimeSeries(redis);
 
-client.on("error", function(err) { console.log("Error: ", err); });
+redis.on("error", function(err) { console.log("Error: ", err); });
 
 // Gets the hit counters for the last 5 '5minutes' time slots
-ts.getHits("messages", "5minutes", 15, console.log);
+console.log(Math.floor(Date.now()/1000));
+ts.getHits(process.argv[2], process.argv[3], process.argv[4], function(err, data) {
+  if (err) console.log(err);
+  data.forEach(function(d) {
+    console.log(new Date(d[0]*1000), d[1]);
+  }); 
+});
 
-client.quit();
+redis.quit();

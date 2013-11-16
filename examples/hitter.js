@@ -1,21 +1,21 @@
-var redis = require('redis'),
+var redis = require('redis').createClient(),
     TimeSeries = require('../'),
-    client = redis.createClient(),
-    ts = new TimeSeries(client),
+    ts = new TimeSeries(redis),
+    key = process.argv[2],
     i = 0;
 
-client.on("error", function(err) { console.log("Error: ", err); });
+redis.on("error", function(err) { console.log("Error: ", err); });
 
 var randomDelay = function() {
-  return Math.floor( Math.random() * 10 * 1000 );
+  return Math.floor( Math.random() * 15 * 100 );
 };
 
 // Just hit the 'messages' counter and wait between
 // 0, 10 secs before trying again
 setTimeout(function hit() {
-  ts.recordHit("messages")
+  ts.recordHit(key)
     .exec(function() {
-      console.log("Recorded hit", ++i, new Date());
+      console.log("Recorded hit ["+key+"]", ++i, new Date());
       setTimeout(hit, randomDelay());
     });
 }, randomDelay());
