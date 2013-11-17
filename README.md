@@ -4,7 +4,7 @@ Convenient module for storing and querying time series statistics in Redis using
 
 The design (and even parts of the implementation) were picked from the [ApiAxle](http://blog.apiaxle.com/post/storing-near-realtime-stats-in-redis/) project.
 
-Check the contents of the `examples` folder for working examples.
+You can find basic usage examples in `examples`. This module also powers a [real-time dashboard](https://github.com/tonyskn/node-dashboard) written in Node.js. Check the sources out for more insight.
 
 ## Dependencies
 
