@@ -26,13 +26,14 @@ TimeSeries.prototype.weeks   = function(i) { return i*this.days(7); };
  * --> var ts = new TimeSeries(redis)
  *              .recordHit("messages")
  *              .recordHit("purchases", ts)
+ *              .recordHit("purchases", ts, 3)
  *              ...
  *              .exec([callback]);
  *
- * `timestamp` should be in seconds, and defaults to
- * current time.
+ * `timestamp` should be in seconds, and defaults to current time.
+ * `increment` should be an integer, and defaults to 1
  */
-TimeSeries.prototype.recordHit = function(key, timestamp) {
+TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
   var self = this;
 
   Object.keys(this.granularities).forEach(function(gran) {
@@ -41,7 +42,7 @@ TimeSeries.prototype.recordHit = function(key, timestamp) {
         tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
         hitTimestamp = getRoundedTime(properties.duration, timestamp);
 
-   self.pendingMulti.hincrby(tmpKey, hitTimestamp, 1);
+   self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(increment || 1));
    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
   });
 
