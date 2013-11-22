@@ -83,3 +83,7 @@ When querying for statistics, a granularity label is expected:
 ```
 
 When creating the `TimeSeries` client, you can override the default granularities with your own. 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/tonyskn/node-redis-timeseries/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
