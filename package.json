@@ -20,10 +20,10 @@
   "author": "Tony Sokhon",
   "license": "MIT",
   "peerDependencies": {
-    "redis": "~0.9.0"
+    "redis": "0.x"
   },
   "devDependencies": {
-    "redis": "~0.9.0",
-    "hiredis": "~0.1.15"
+    "redis": "0.x",
+    "hiredis": "0.x"
   }
 }
