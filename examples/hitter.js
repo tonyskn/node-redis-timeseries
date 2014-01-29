@@ -22,7 +22,6 @@ setTimeout(function hit() {
 
 // Just decrement the 'key' counter every once in a while
 // with some delay to try again
-
 setTimeout(function removeHit() {
   ts.removeHit(key)
     .exec(function() {

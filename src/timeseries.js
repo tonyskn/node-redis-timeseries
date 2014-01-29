@@ -57,29 +57,17 @@ TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
  *  stats keys you provide
  *
  * "timestamp" defaults to the current time
- * "decrement" defaults to 1
+ * "decrement" defaults to -1
  *
  *  ts.removeHit('your_stats_key')
- *  .removeHit('another_stats_key', timestamp)
- *  .removeHit('another_stats_key', timestamp2, decrement)
- *   …
- *  .exec();
+ *    .removeHit('another_stats_key', timestamp)
+ *    .removeHit('another_stats_key', timestamp2, decrement)
+ *     …
+ *    .exec();
  */
 TimeSeries.prototype.removeHit = function(key, timestamp, decrement) {
-  var self = this;
-
-  Object.keys(this.granularities).forEach(function(gran) {
-    var properties = self.granularities[gran],
-      keyTimestamp = getRoundedTime(properties.ttl, timestamp),
-            tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
-      hitTimestamp = getRoundedTime(properties.duration, timestamp);
-
-    self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(decrement || -1));
-    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
-  });
-
-  return this;
-}
+  return this.recordHit(key, timestamp, -(decrement || 1));
+};
 
 /**
  * Execute the current pending redis multi

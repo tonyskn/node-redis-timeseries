@@ -41,6 +41,12 @@ You can find basic usage examples in `examples`. This module also powers a [real
       .recordHit('another_stats_key', timestamp2, increment)
 	  …
 	  .exec();
+
+    // Removing hits
+    //
+    // It's also possible to decrement the hits counter for
+    // some key
+    ts.removeHit('your_stats_key', [timestamp]).exec();
 	  
 	// Querying statistics
 	//
