@@ -4,14 +4,14 @@
   "description": "Manage timeseries data storage in Redis with ease",
   "main": "index.js",
   "scripts": {
-    "test": "npm test"
+    "test": "./node_modules/.bin/vows test/*.js"
   },
   "engines": {
-      "node": ">=0.10.0"
+    "node": ">=0.10.0"
   },
   "repository": {
-      "type": "git",
-      "url": "git://github.com/tonyskn/node-redis-timeseries.git"
+    "type": "git",
+    "url": "git://github.com/tonyskn/node-redis-timeseries.git"
   },
   "keywords": [
     "Redis",
@@ -24,6 +24,8 @@
   },
   "devDependencies": {
     "redis": "0.x",
-    "hiredis": "0.x"
+    "hiredis": "0.x",
+    "async": "~0.2.10",
+    "vows": "~0.7.0"
   }
 }
