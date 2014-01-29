@@ -53,14 +53,12 @@ TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
  * Execute the current pending redis multi
  */
 TimeSeries.prototype.exec = function(callback) {
-  var self = this;
+  // Reset pendingMulti before proceeding to
+  // avoid concurrent modifications
+  var current = this.pendingMulti;
+  this.pendingMulti = this.redis.multi();
 
-  if (this.pendingMulti) {
-    this.pendingMulti.exec(function(err, result) {
-      self.pendingMulti = self.redis.multi();
-      if (typeof callback === "function") callback(err, result);
-    });
-  }
+  current.exec(callback);
 };
 
 /** 
