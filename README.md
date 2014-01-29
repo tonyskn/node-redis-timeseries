@@ -1,5 +1,7 @@
 # Node.js API for storing and querying time series in Redis
 
+[![Build Status][travis-image]][travis]
+
 Convenient module for storing and querying time series statistics in Redis using Node.js.
 
 The design (and even parts of the implementation) were picked from the [ApiAxle](http://blog.apiaxle.com/post/storing-near-realtime-stats-in-redis/) project.
@@ -87,3 +89,5 @@ When creating the `TimeSeries` client, you can override the default granularitie
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/tonyskn/node-redis-timeseries/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
+[travis]: http://travis-ci.org/tonyskn/node-redis-timeseries
+[travis-image]: https://secure.travis-ci.org/tonyskn/node-redis-timeseries.png?branch=master
