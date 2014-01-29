@@ -90,4 +90,4 @@ When creating the `TimeSeries` client, you can override the default granularitie
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/tonyskn/node-redis-timeseries/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
 [travis]: http://travis-ci.org/tonyskn/node-redis-timeseries
-[travis-image]: https://secure.travis-ci.org/tonyskn/node-redis-timeseries.png?branch=master
+[travis-image]: https://travis-ci.org/tonyskn/node-redis-timeseries.png
