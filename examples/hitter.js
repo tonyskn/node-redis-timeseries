@@ -19,3 +19,15 @@ setTimeout(function hit() {
       setTimeout(hit, randomDelay());
     });
 }, randomDelay());
+
+// Just decrement the 'key' counter every once in a while
+// with some delay to try again
+
+setTimeout(function removeHit() {
+  ts.removeHit(key)
+    .exec(function() {
+      console.log("Removed hit ["+key+"]", ++i, new Date());
+      setTimeout(removeHit, randomDelay()+5000);
+    });
+}, randomDelay()+5000);
+

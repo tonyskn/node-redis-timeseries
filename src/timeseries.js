@@ -19,6 +19,7 @@ TimeSeries.prototype.minutes = function(i) { return i*60; };
 TimeSeries.prototype.hours   = function(i) { return i*this.minutes(60); };
 TimeSeries.prototype.days    = function(i) { return i*this.hours(24); };
 TimeSeries.prototype.weeks   = function(i) { return i*this.days(7); };
+TimeSeries.prototype.months  = function(i) { return i*(this.weeks(4)+this.days(2)); };
 
 /**
  * Record a hit for the specified stats key
@@ -48,6 +49,37 @@ TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
 
   return this;
 };
+
+/*
+ *  Removing hits
+ *
+ *  This decrements the counters for the
+ *  stats keys you provide
+ *
+ * "timestamp" defaults to the current time
+ * "decrement" defaults to 1
+ *
+ *  ts.removeHit('your_stats_key')
+ *  .removeHit('another_stats_key', timestamp)
+ *  .removeHit('another_stats_key', timestamp2, decrement)
+ *   …
+ *  .exec();
+ */
+TimeSeries.prototype.removeHit = function(key, timestamp, decrement) {
+  var self = this;
+
+  Object.keys(this.granularities).forEach(function(gran) {
+    var properties = self.granularities[gran],
+      keyTimestamp = getRoundedTime(properties.ttl, timestamp),
+            tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
+      hitTimestamp = getRoundedTime(properties.duration, timestamp);
+
+    self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(decrement || -1));
+    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
+  });
+
+  return this;
+}
 
 /**
  * Execute the current pending redis multi
