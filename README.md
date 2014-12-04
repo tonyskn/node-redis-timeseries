@@ -33,7 +33,9 @@ You can find basic usage examples in `examples`. This module also powers a [real
 	// This increments the counters for the
 	// stats keys you provide
 	//
-	// "timestamp" defaults to the current time
+	// "timestamp" defaults to the current time. If providing
+	// a timestamp, it should be in unix timestamp format (seconds
+	// since epoch).
     // "increment" defaults to 1
 	//
 	// .exec takes an optional callback with no arguments.
