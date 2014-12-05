@@ -85,10 +85,14 @@ When querying for statistics, a granularity label is expected:
 
 ```javascript
 	// Give me the hits/second for the last 3 minutes
-	ts.getHits('your_stats_key', '1second', ts.minutes(3), callback);
+	ts.getHits('your_stats_key', '1second', ts.minutes(3), function(err, data){
+		//process the data
+	});
 	
 	// Give me the number of hits per day for the last 2 weeks
-	ts.getHits('your_stats_key', '1day', 14, callback);
+	ts.getHits('your_stats_key', '1day', 14, function(err, data){
+		//process the data
+	});
 	
 	// And so on
 ```
