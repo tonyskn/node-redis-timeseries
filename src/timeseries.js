@@ -93,7 +93,7 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
     return callback(new Error("Unsupported granularity: "+gran));
   }
 
-  if (count > properties.ttl / properties.duration) {
+  if (count > properties.ttl) {
     return callback(new Error("Count: "+count+" exceeds the maximum stored slots for granularity: "+gran));
   }
 
