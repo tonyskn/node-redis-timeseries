@@ -56,9 +56,7 @@ You can find basic usage examples in `examples`. This module also powers a [real
 	// "timestamp" defaults to the current time
     // "increment" defaults to 1
 	//
-	ts.recordHit('your_stats_key')
-	  .recordHit('another_stats_key', timestamp)
-      .recordHit('another_stats_key', timestamp2, increment)
+	ts.recordValue('your_stats_key', timestamp, value)
 	  …
 	  .exec();
 	  
