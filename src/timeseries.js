@@ -43,8 +43,8 @@ TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
         tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
         hitTimestamp = getRoundedTime(properties.duration, timestamp);
 
-   self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(increment || 1));
-   self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
+    self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(increment || 1));
+    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
   });
 
   return this;
@@ -114,6 +114,73 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
 
     for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.duration, i+=1) {
       data.push([ts, results[i] ? parseInt(results[i], 10) : 0]);
+    }
+
+    return callback(null, data.slice(Math.max(data.length - count, 0)));
+  });
+};
+
+/**
+ * Record a value for the specified stats key
+ * This method is chainable:
+ * --> var ts = new TimeSeries(redis)
+ *              .recordValue("speed", ts, 42)
+ *              .recordValue("rpm", ts, 7800)
+ *              ...
+ *              .exec([callback]);
+ *
+ * `timestamp` should be in seconds, and defaults to current time.
+ * `value` should be an integer, and defaults to 0
+ */
+TimeSeries.prototype.recordValue = function(key, timestamp, value) {
+  var self = this;
+
+  Object.keys(this.granularities).forEach(function(gran) {
+    var properties = self.granularities[gran],
+        keyTimestamp = getRoundedTime(properties.ttl, timestamp),
+        tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
+        hitTimestamp = getRoundedTime(properties.duration, timestamp);
+
+    self.pendingMulti.hset(tmpKey, hitTimestamp, Math.floor(value || 0));
+    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
+  });
+
+  return this;
+};
+
+/** 
+ * getValues("speed", "1minute", 60, cb)
+ *   --> "speed" values for the last hour's 1 minute readings
+ */
+TimeSeries.prototype.getValues = function(key, gran, count, callback) {
+  var properties = this.granularities[gran],
+      currentTime = getCurrentTime();
+
+  if (typeof properties === "undefined") {
+    return callback(new Error("Unsupported granularity: "+gran));
+  }
+
+  if (count > properties.ttl / properties.duration) {
+    return callback(new Error("Count: "+count+" exceeds the maximum stored slots for granularity: "+gran));
+  }
+
+  var from = getRoundedTime(properties.duration, currentTime - count*properties.duration),
+      to = getRoundedTime(properties.duration, currentTime);
+
+  for(var ts=from, multi=this.redis.multi(); ts<=to; ts+=properties.duration) {
+    var keyTimestamp = getRoundedTime(properties.ttl, ts),
+        tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
+
+    multi.hget(tmpKey, ts);
+  }
+
+  multi.exec(function(err, results) {
+    if (err) {
+      return callback(err);
+    }
+
+    for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.duration, i+=1) {
+      data.push([ts, results[i] ? parseInt(results[i], 10) : null]);
     }
 
     return callback(null, data.slice(Math.max(data.length - count, 0)));

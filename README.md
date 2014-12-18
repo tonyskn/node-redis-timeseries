@@ -47,6 +47,20 @@ You can find basic usage examples in `examples`. This module also powers a [real
     // It's also possible to decrement the hits counter for
     // some key
     ts.removeHit('your_stats_key', [timestamp]).exec();
+
+    // Recording values
+	//
+	// This sets the value for the
+	// stats keys you provide
+	//
+	// "timestamp" defaults to the current time
+    // "increment" defaults to 1
+	//
+	ts.recordHit('your_stats_key')
+	  .recordHit('another_stats_key', timestamp)
+      .recordHit('another_stats_key', timestamp2, increment)
+	  …
+	  .exec();
 	  
 	// Querying statistics
 	//
@@ -54,6 +68,12 @@ You can find basic usage examples in `examples`. This module also powers a [real
 	// "granularity_label"
 	// 
 	ts.getHits('your_stats_key', granularity_label, count, function(err, data) {
+		// data.length == count
+		// data = [ [ts1, count1], [ts2, count2]... ]
+	});
+
+	// getValues is identical to getHits except that it returns a null value for unset timestamps
+	ts.getValues('your_stats_key', granularity_label, count, function(err, data) {
 		// data.length == count
 		// data = [ [ts1, count1], [ts2, count2]... ]
 	});
