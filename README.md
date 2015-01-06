@@ -33,14 +33,17 @@ You can find basic usage examples in `examples`. This module also powers a [real
 	// This increments the counters for the
 	// stats keys you provide
 	//
-	// "timestamp" defaults to the current time
+	// "timestamp" defaults to the current time. If providing
+	// a timestamp, it should be in unix timestamp format (seconds
+	// since epoch).
     // "increment" defaults to 1
 	//
+	// .exec takes an optional callback with no arguments.
 	ts.recordHit('your_stats_key')
 	  .recordHit('another_stats_key', timestamp)
       .recordHit('another_stats_key', timestamp2, increment)
 	  …
-	  .exec();
+	  .exec(callback);
 
     // Removing hits
     //
@@ -82,10 +85,14 @@ When querying for statistics, a granularity label is expected:
 
 ```javascript
 	// Give me the hits/second for the last 3 minutes
-	ts.getHits('your_stats_key', '1second', ts.minutes(3), callback);
+	ts.getHits('your_stats_key', '1second', ts.minutes(3), function(err, data){
+		//process the data
+	});
 	
 	// Give me the number of hits per day for the last 2 weeks
-	ts.getHits('your_stats_key', '1day', 14, callback);
+	ts.getHits('your_stats_key', '1day', 14, function(err, data){
+		//process the data
+	});
 	
 	// And so on
 ```
