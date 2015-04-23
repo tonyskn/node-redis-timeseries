@@ -47,9 +47,11 @@ You can find basic usage examples in `examples`. This module also powers a [real
 
     // Removing hits
     //
-    // It's also possible to decrement the hits counter for
-    // some key
+    // Decrements the hits for a specified point in time.
     ts.removeHit('your_stats_key', [timestamp]).exec();
+    
+    // Decrement defaults to 1, but can be specified explicitly (below).
+    ts.removeHit('your_stats_key', [timestamp], 5).exec();
 	  
 	// Querying statistics
 	//
