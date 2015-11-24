@@ -82,15 +82,22 @@ You can find basic usage examples in `examples`. This module also powers a [real
 	// Returns "count" chunks of counters at the precision described by
 	// "granularity_label"
 	// 
-	ts.getHits('your_stats_key', granularity_label, count, function(err, data) {
-		// data.length == count
-		// data = [ [ts1, count1], [ts2, count2]... ]
+	ts.getHits('your_stats_key', granularity_label, opts, function(err, data) {
+		// opts = {
+			// count : (int) how many time slices to scan back
+			// backfill : (bool) whether or not to create and set 0 values to slices where no hits were recorded
+		// }
+		// data = [ [ts1, hitCount1], [ts2, hitCount2]... ]
 	});
 
 	// getValues is identical to getHits except that it returns a null value for unset timestamps
-	ts.getValues('your_stats_key', granularity_label, count, function(err, data) {
-		// data.length == count
-		// data = [ [ts1, count1], [ts2, count2]... ]
+	ts.getValues('your_stats_key', granularity_label, opts, function(err, data) {
+		// opts = {
+			// count : (int) how many time slices to scan back
+			// backfill : (bool) whether or not to create a record for slices with no set events
+			// backfillLastSet : (bool) whether or not to use the last-set value for slices with no set events (default, false results in value null)
+		// }
+		// data = [ [ts1, value1], [ts2, value2]... ]
 	});
 ```
 
