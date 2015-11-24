@@ -49,6 +49,18 @@ You can find basic usage examples in `examples`. This module also powers a [real
     //
     // Decrements the hits for a specified point in time.
     ts.removeHit('your_stats_key', [timestamp]).exec();
+
+    // Recording values
+	//
+	// This sets the value for the
+	// stats keys you provide
+	//
+	// "timestamp" defaults to the current time
+    // "increment" defaults to 1
+	//
+	ts.recordValue('your_stats_key', timestamp, value)
+	  …
+	  .exec();
     
     // Decrement defaults to 1, but can be specified explicitly (below).
     ts.removeHit('your_stats_key', [timestamp], 5).exec();
