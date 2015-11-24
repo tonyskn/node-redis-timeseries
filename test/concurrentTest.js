@@ -21,6 +21,7 @@ vows.describe('TimeSeries Tests').addBatch({
       var date = Math.floor(Date.now() / 1000);
       //date = date.getTime() / 1000;
       var backDate = date - 7200; // 3 hours
+      var backBackDate = date - 14400; // 6 hours
 
       // Reduce granularities for easier testing
       ts.granularities = {
@@ -71,6 +72,7 @@ vows.describe('TimeSeries Tests').addBatch({
       tasks.push(recordValue('valueKey', date, 1));
       tasks.push(recordValue('valueKey', date, 1));
       tasks.push(recordValue('valueKey', backDate, 2));
+      tasks.push(recordValue('valueKey', backBackDate, 3));
       tasks.push(getValues({ backfill : false }));
       tasks.push(getValues({ backfillLastValue : false }));
       tasks.push(getValues());
@@ -84,9 +86,11 @@ vows.describe('TimeSeries Tests').addBatch({
 
       redis.flushdb();
 
+      console.log(results[results.length-5])
+
       assert.deepEqual(results[results.length-5], [ 2, 1 ])
       assert.deepEqual(results[results.length-4], [ null, 2, null, 1 ])
-      assert.deepEqual(results[results.length-3], [ null, 2, 2, 1 ])
+      assert.deepEqual(results[results.length-3], [ 3, 2, 2, 1 ])
       assert.deepEqual(results[results.length-2], [ 15 ])
       assert.deepEqual(results[results.length-1], [ 0, 0, 0, 15 ])
 

@@ -196,22 +196,30 @@ TimeSeries.prototype.getValues = function(key, gran, opts, callback) {
     return callback(new Error("Count: "+count+" exceeds the maximum stored slots for granularity: "+gran));
   }
 
-  var from = getRoundedTime(properties.duration, currentTime - count*properties.duration),
-      to = getRoundedTime(properties.duration, currentTime);
+  var backFrom = getRoundedTime(properties.duration, currentTime - fullCount*properties.duration),
+      from = getRoundedTime(properties.duration, currentTime - (count-1)*properties.duration),
+      to = getRoundedTime(properties.duration, currentTime),
+      multi = this.redis.multi(),
+      keyTimestamp = getRoundedTime(properties.ttl, backFrom ),
+      tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
 
-  for(var ts=from, multi=this.redis.multi(); ts<=to; ts+=properties.duration) {
-    var keyTimestamp = getRoundedTime(properties.ttl, ts),
-        tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
-
+  for(var ts=backFrom; ts<=to; ts+=properties.duration) {
+    keyTimestamp = getRoundedTime(properties.ttl, ts)
+    tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
     multi.hget(tmpKey, ts);
   }
 
   multi.exec(function(err, results) {
+    
     if (err) {
       return callback(err);
     }
 
-    for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.duration, i+=1) {
+    for(var ts=backFrom, i=0, data=[]; ts<=from; ts+=properties.duration, i+=1) {
+      latestValue = results[i] ? parseInt(results[i], 10) : latestValue;
+    }
+
+    for(var ts=from, i=fullCount-count+1, data=[]; ts<=to; ts+=properties.duration, i+=1) {
       latestValue = results[i] ? parseInt(results[i], 10) : latestValue;
       if(results[i]) data.push([ts, latestValue]);
       if(!results[i] && backfill) data.push([ts, backfillLastValue ? latestValue : null ]);
