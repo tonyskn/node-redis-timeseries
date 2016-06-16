@@ -49,18 +49,55 @@ You can find basic usage examples in `examples`. This module also powers a [real
     //
     // Decrements the hits for a specified point in time.
     ts.removeHit('your_stats_key', [timestamp]).exec();
+
+    // Recording values
+	//
+	// This sets the value for the
+	// stats keys you provide
+	//
+	// "timestamp" defaults to the current time
+    // "increment" defaults to 1
+	//
+	ts.recordValue('your_stats_key', timestamp, value)
+	  …
+	  .exec();
     
     // Decrement defaults to 1, but can be specified explicitly (below).
     ts.removeHit('your_stats_key', [timestamp], 5).exec();
+
+    // Recording values
+	//
+	// This sets the value for the
+	// stats keys you provide
+	//
+	// "timestamp" defaults to the current time
+    // "increment" defaults to 1
+	//
+	ts.recordValue('your_stats_key', timestamp, value)
+	  …
+	  .exec();
 	  
 	// Querying statistics
 	//
 	// Returns "count" chunks of counters at the precision described by
 	// "granularity_label"
 	// 
-	ts.getHits('your_stats_key', granularity_label, count, function(err, data) {
-		// data.length == count
-		// data = [ [ts1, count1], [ts2, count2]... ]
+	ts.getHits('your_stats_key', granularity_label, opts, function(err, data) {
+		// opts = {
+			// count : (int) how many time slices to scan back
+			// backfill : (bool) whether or not to create and set 0 values to slices where no hits were recorded
+		// }
+		// data = [ [ts1, hitCount1], [ts2, hitCount2]... ]
+	});
+
+	// getValues is identical to getHits except that it returns a null value for unset timestamps
+	ts.getValues('your_stats_key', granularity_label, opts, function(err, data) {
+		// opts = {
+			// count : (int) how many time slices to scan back
+			// backfill : (bool) whether or not to create a record for slices with no set events
+			// backfillLastSet : (bool) whether or not to use the last-set value for slices with no set events (default, false results in value null)
+		// }
+		// data = [ [ts1, value1], [ts2, value2]... ]
 	});
 ```
 
@@ -87,12 +124,12 @@ When querying for statistics, a granularity label is expected:
 
 ```javascript
 	// Give me the hits/second for the last 3 minutes
-	ts.getHits('your_stats_key', '1second', ts.minutes(3), function(err, data){
+	ts.getHits('your_stats_key', '1second', { count : ts.minutes(3) }, function(err, data){
 		//process the data
 	});
 	
 	// Give me the number of hits per day for the last 2 weeks
-	ts.getHits('your_stats_key', '1day', 14, function(err, data){
+	ts.getHits('your_stats_key', '1day', { count : 14 }, function(err, data){
 		//process the data
 	});
 	

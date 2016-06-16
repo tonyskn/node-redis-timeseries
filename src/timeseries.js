@@ -1,5 +1,5 @@
 
-var TimeSeries = module.exports = function(redis, keyBase, granularities) {
+var TimeSeries = module.exports = function(redis, keyBase, granularities, opts) {
   this.redis = redis;
   this.keyBase = keyBase || 'stats';
   this.pendingMulti = redis.multi();
@@ -43,8 +43,8 @@ TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
         tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
         hitTimestamp = getRoundedTime(properties.duration, timestamp);
 
-   self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(increment || 1));
-   self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
+    self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(increment || 1));
+    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
   });
 
   return this;
@@ -85,16 +85,17 @@ TimeSeries.prototype.exec = function(callback) {
  * getHits("messages", "10minutes", 3, cb)
  *   --> "messages" hits during the last 3 '10minutes' chunks
  */
-TimeSeries.prototype.getHits = function(key, gran, count, callback) {
+TimeSeries.prototype.getHits = function(key, gran, opts, callback) {
   var properties = this.granularities[gran],
-      currentTime = getCurrentTime();
+      currentTime = getCurrentTime(),
+      fullCount = properties.ttl / properties.duration,
+      count = fullCount,
+      backfill = true;
 
-  if (typeof properties === "undefined") {
-    return callback(new Error("Unsupported granularity: "+gran));
-  }
-
-  if (count > properties.ttl / properties.duration) {
-    return callback(new Error("Count: "+count+" exceeds the maximum stored slots for granularity: "+gran));
+  if(typeof(opts) == 'Number'){
+    count = opts;
+  }else{
+    if(typeof(opts.backfill) !== 'undefined') backfill = opts.backfill;
   }
 
   var from = getRoundedTime(properties.duration, currentTime - count*properties.duration),
@@ -113,10 +114,118 @@ TimeSeries.prototype.getHits = function(key, gran, count, callback) {
     }
 
     for(var ts=from, i=0, data=[]; ts<=to; ts+=properties.duration, i+=1) {
-      data.push([ts, results[i] ? parseInt(results[i], 10) : 0]);
+      if(results[i]) data.push([ts, parseInt(results[i], 10)]);
+      if(!results[i] && backfill) data.push([ts, 0]);
     }
 
-    return callback(null, data.slice(Math.max(data.length - count, 0)));
+    return callback(null, data.slice(Math.max(data.length - opts.count, 0)));
+  });
+};
+
+/**
+ * Record a value for the specified stats key
+ * This method is chainable:
+ * --> var ts = new TimeSeries(redis)
+ *              .recordValue("speed", ts, 42)
+ *              .recordValue("rpm", ts, 7800)
+ *              ...
+ *              .exec([callback]);
+ *
+ * `timestamp` should be in seconds, and defaults to current time.
+ * `value` should be an integer, and defaults to 0
+ */
+TimeSeries.prototype.recordValue = function(key, timestamp, value) {
+  var self = this;
+
+  Object.keys(this.granularities).forEach(function(gran) {
+    timestamp = timestamp || new Date;
+    var properties = self.granularities[gran],
+        keyTimestamp = getRoundedTime(properties.ttl, timestamp),
+        tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
+        hitTimestamp = getRoundedTime(properties.duration, timestamp);
+
+    self.pendingMulti.hset(tmpKey, hitTimestamp, Math.floor(value || 0));
+    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
+  });
+
+  return this;
+};
+
+TimeSeries.prototype.recordHit = function(key, timestamp, increment) {
+  var self = this;
+
+  Object.keys(this.granularities).forEach(function(gran) {
+    var properties = self.granularities[gran],
+        keyTimestamp = getRoundedTime(properties.ttl, timestamp),
+        tmpKey = [self.keyBase, key, gran, keyTimestamp].join(':'),
+        hitTimestamp = getRoundedTime(properties.duration, timestamp);
+
+    self.pendingMulti.hincrby(tmpKey, hitTimestamp, Math.floor(increment || 1));
+    self.pendingMulti.expireat(tmpKey, keyTimestamp + 2 * properties.ttl);
+  });
+
+  return this;
+};
+
+/** 
+ * getValues("speed", "1minute", 60, cb)
+ *   --> "speed" values for the last hour's 1 minute readings
+ */
+TimeSeries.prototype.getValues = function(key, gran, opts, callback) {
+  var properties = this.granularities[gran],
+      currentTime = getCurrentTime(),
+      fullCount = properties.ttl / properties.duration,
+      count = fullCount,
+      backfill = true,
+      backfillLastValue = true,
+      latestValue = null;
+
+  if(typeof(opts) == 'Number'){
+    count = opts;
+  }else{
+    if(typeof(opts.count) !== 'undefined' ) count = opts.count;
+    if(typeof(opts.backfill) !== 'undefined' ) backfill = opts.backfill;
+    if(typeof(opts.backfillLastValue) !== 'undefined' ) backfillLastValue = opts.backfillLastValue;
+  }
+  
+  if (typeof properties === "undefined") {
+    return callback(new Error("Unsupported granularity: "+gran));
+  }
+
+  if (count > properties.ttl / properties.duration) {
+    return callback(new Error("Count: "+count+" exceeds the maximum stored slots for granularity: "+gran));
+  }
+
+  var backFrom = getRoundedTime(properties.duration, currentTime - fullCount*properties.duration),
+      from = getRoundedTime(properties.duration, currentTime - (count-1)*properties.duration),
+      to = getRoundedTime(properties.duration, currentTime),
+      multi = this.redis.multi(),
+      keyTimestamp = getRoundedTime(properties.ttl, backFrom ),
+      tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
+
+  for(var ts=backFrom; ts<=to; ts+=properties.duration) {
+    keyTimestamp = getRoundedTime(properties.ttl, ts)
+    tmpKey = [this.keyBase, key, gran, keyTimestamp].join(':');
+    multi.hget(tmpKey, ts);
+  }
+
+  multi.exec(function(err, results) {
+    
+    if (err) {
+      return callback(err);
+    }
+
+    for(var ts=backFrom, i=0, data=[]; ts<=from; ts+=properties.duration, i+=1) {
+      latestValue = results[i] ? parseInt(results[i], 10) : latestValue;
+    }
+
+    for(var ts=from, i=fullCount-count+1, data=[]; ts<=to; ts+=properties.duration, i+=1) {
+      latestValue = results[i] ? parseInt(results[i], 10) : latestValue;
+      if(results[i]) data.push([ts, latestValue]);
+      if(!results[i] && backfill) data.push([ts, backfillLastValue ? latestValue : null ]);
+    }
+
+    callback(null, data.slice(Math.max(data.length - count, 0)));
   });
 };
 
